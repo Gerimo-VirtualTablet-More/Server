@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "cnnc (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "cnnc (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
