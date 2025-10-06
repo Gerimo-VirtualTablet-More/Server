@@ -7,6 +7,8 @@ namespace cnnc
     {
         private InputInjector injector;
 
+     
+
         public Writing()
         {
             injector = InputInjector.TryCreate();
@@ -14,39 +16,54 @@ namespace cnnc
             {
                 Debug.WriteLine("InputInjector konnte nicht erstellt werden.");
             }
+           
 
            
             
         }
 
-        public void simulatePenTap(int x, int y, float pressure)
+        public void simulatePenTap(string action, int x, int y, float pressure)
         {
-
-            InjectedInputPenInfo injectedInputPenInfo = new InjectedInputPenInfo()
+            if (action.Equals("HOVER"))
             {
-                PointerInfo = new InjectedInputPointerInfo()
+                InjectedInputPenInfo hoverInjector = new InjectedInputPenInfo
                 {
-                    PointerOptions = InjectedInputPointerOptions.InContact ,
-                    PixelLocation = new InjectedInputPoint()
+                    PointerInfo = new InjectedInputPointerInfo
                     {
-                        PositionX = x,
-                        PositionY = y   
-                    }
-                    
-                },
+                        PointerOptions = InjectedInputPointerOptions.InRange,
+                        PixelLocation = new InjectedInputPoint
+                        {
+                            PositionX = x,
+                            PositionY = y
+                        }
+                    },
+                   
 
+                };
+
+                injector.InjectPenInput(hoverInjector);
+            }
+            else if(action.Equals("CLICK"))
+            {
+            InjectedInputPenInfo clickInjector = new InjectedInputPenInfo
+                {
+                    PointerInfo = new InjectedInputPointerInfo
+                    {
+                        PointerOptions = InjectedInputPointerOptions.InContact,
+                        PixelLocation = new InjectedInputPoint
+                        {
+                            PositionX = x,
+                            PositionY = y
+                        }
+                    },
 
                 Pressure = pressure,
                 PenParameters = InjectedInputPenParameters.Pressure
-
-
             };
 
-            injector.InjectPenInput(injectedInputPenInfo);
-
-
-
-
+                injector.InjectPenInput(clickInjector);
+            }
+        
 
 
         }

@@ -43,8 +43,9 @@ namespace cnnc
                 int xPos = int.Parse(message[0]);
                 int yPos = int.Parse(message[1]);
                 float pressure = float.Parse(message[2], CultureInfo.InvariantCulture);
+                string action = message[3];
+                writing.simulatePenTap(action,xPos, yPos, pressure);
 
-                writing.simulatePenTap(xPos, yPos, pressure);
             }
 
             try
