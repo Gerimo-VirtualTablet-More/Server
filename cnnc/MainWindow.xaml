@@ -1,22 +1,36 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Window
     x:Class="cnnc.MainWindow"
-   
-    
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:cnnc"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    mc:Ignorable="d"
-    Title="cnnc">
+    Title="Gerimo - Server Application"
+   
+    >
 
-    <Window.SystemBackdrop>
-        <MicaBackdrop />
-    </Window.SystemBackdrop>
+    <Grid Padding="30" RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="20">
 
-    <Grid>
+        <!-- IP + Port Eingabe -->
+        <StackPanel Orientation="Horizontal" Spacing="10">
+            <TextBox x:Name="IpTextBox"
+                     Width="200"
+                     VerticalAlignment="Center"
+                     IsEnabled="false"
+                     CornerRadius="4"/>
+            <TextBox x:Name="PortTextBox"
+                     PlaceholderText="PORT"
+                     Width="80"
+                     VerticalAlignment="Center"
+                     CornerRadius="4"/>
+        </StackPanel>
 
 
+        <!-- Run Button -->
+        <Button Grid.Row="4"
+                Content="Run"
+                FontSize="20"
+                Height="50"
+                HorizontalAlignment="Stretch"
+                Margin="0,30,0,0"
+                CornerRadius="4"
+                />
     </Grid>
 </Window>
