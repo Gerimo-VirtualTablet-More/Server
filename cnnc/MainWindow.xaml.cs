@@ -1,43 +1,73 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Windows.Forms;
-using Windows.Devices.Display.Core;
-using Windows.Devices.Radios;
-using Windows.Graphics;
-using WinRT;
-using static WindowsInput.Native.SystemMetrics;
-
+using System.Drawing;
+using System.Windows.Forms; // NuGet: Microsoft.Windows.Compatibility
+using Windows.Storage;
 
 namespace cnnc
 {
-
     public sealed partial class MainWindow : Window
     {
+        private NotifyIcon trayIcon;
 
         public MainWindow()
         {
-            InitializeComponent();
-            Launcher launcher = new Launcher();
-            _ = launcher.main(); // Fire-and-forget
+            Content = new MainPage();
+            this.Title = "Gerimo - Server";
+            ConfigureWindow(400, 800);
+
+            // TrayIcon immer initialisieren
+            CreateTrayIcon();
+            trayIcon.Click += TrayIcon_Click;
+
+            var local = ApplicationData.Current.LocalSettings;
+            var autoMinimize = (local.Values["AutostartMinimize"] as bool?) ?? false;
+            if (autoMinimize)
+            {
+                // Fenster erst nach Initialisierung ausblenden!
+                this.Activated += (s, e) =>
+                {
+                    var appWindow = this.AppWindow;
+                    appWindow.Hide();
+                };
+            }
         }
 
+        private void ConfigureWindow(int width, int height)
+        {
+            var appWindow = this.AppWindow;
+            appWindow.Resize(new Windows.Graphics.SizeInt32(width, height));
+            var displayArea = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Primary);
+            var wa = displayArea.WorkArea;
+            int x = wa.X + (wa.Width - width) / 2;
+            int y = wa.Y + (wa.Height - height) / 2;
+            appWindow.Move(new Windows.Graphics.PointInt32(x, y));
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.IsResizable = false;
+                presenter.IsMaximizable = false;
+                presenter.IsMinimizable = true;
+            }
+        }
 
+        public void CreateTrayIcon()
+        {
+            string exeDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string assetsDir = System.IO.Path.Combine(exeDir, "Assets");
+            string iconPath = System.IO.Path.Combine(assetsDir, "trayicon.ico");
+            trayIcon = new NotifyIcon();
+            trayIcon.Icon = new Icon(iconPath); // Das Icon muss eine echte .ico Datei sein!
+            trayIcon.Text = "Gerimo is running!";
+            trayIcon.Visible = true;
+        }
 
+        private void TrayIcon_Click(object sender, EventArgs e)
+        {
+            var appWindow = this.AppWindow;
+            appWindow.Show();
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+                presenter.Restore();
+        }
     }
-
-
-
-
-
-
-
-
-
-
-
-
 }

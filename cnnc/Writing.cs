@@ -120,79 +120,88 @@ namespace cnnc
 
         public void simulatePinch(InputInjector injector, int x1, int x2, int y1, int y2)
         {
-            // Ende der Geste
-            if (x1 == 0 && x2 == 0 && y1 == 0 && y2 == 0)
-            {
-                if (isPinching)
-                {
-                    var pointerUp = new InjectedInputTouchInfo[2];
-                    pointerUp[0] = new InjectedInputTouchInfo {
-                        PointerInfo = new InjectedInputPointerInfo {
-                            PointerId = 1,
-                            PixelLocation = new InjectedInputPoint(lastX1, lastY1),
-                            PointerOptions = InjectedInputPointerOptions.PointerUp
-                        }
-                    };
-                    // Korrigierte Koordinaten: lastX2, lastY2
-                    pointerUp[1] = new InjectedInputTouchInfo {
-                        PointerInfo = new InjectedInputPointerInfo {
-                            PointerId = 2,
-                            PixelLocation = new InjectedInputPoint(lastX2, lastY2),
-                            PointerOptions = InjectedInputPointerOptions.PointerUp
-                        }
-                    };
-                    lock (injectLock)
-                    {
-                        injector.InjectTouchInput(pointerUp);
-                    }
-                    isPinching = false;
-                }
-                return;
-            }
-
-            var pointers = new InjectedInputTouchInfo[2];
-            if (!isPinching)
-            {
-                 isPinching = true;
-                pointers[0] = new InjectedInputTouchInfo {
-                    PointerInfo = new InjectedInputPointerInfo {
-                        PointerId = 1,
-                        PixelLocation = new InjectedInputPoint(x1, y1),
-                        PointerOptions = InjectedInputPointerOptions.PointerDown | InjectedInputPointerOptions.InContact
-                    }
-                };
-                pointers[1] = new InjectedInputTouchInfo {
-                    PointerInfo = new InjectedInputPointerInfo {
-                        PointerId = 2,
-                        PixelLocation = new InjectedInputPoint(x2, y2),
-                        PointerOptions = InjectedInputPointerOptions.PointerDown | InjectedInputPointerOptions.InContact
-                    }
-                };
-            }
-            else
-            {
-                pointers[0] = new InjectedInputTouchInfo {
-                    PointerInfo = new InjectedInputPointerInfo {
-                        PointerId = 1,
-                        PixelLocation = new InjectedInputPoint(x1, y1),
-                        PointerOptions = InjectedInputPointerOptions.Update | InjectedInputPointerOptions.InContact
-                    }
-                };
-                pointers[1] = new InjectedInputTouchInfo {
-                    PointerInfo = new InjectedInputPointerInfo {
-                        PointerId = 2,
-                        PixelLocation = new InjectedInputPoint(x2, y2),
-                        PointerOptions = InjectedInputPointerOptions.Update | InjectedInputPointerOptions.InContact
-                    }
-                };
-            }
-
             lock (injectLock)
             {
-                injector.InjectTouchInput(pointers);
-            }
+                // Ende der Geste
+                if (x1 == 0 && x2 == 0 && y1 == 0 && y2 == 0)
+                {
+                    if (isPinching)
+                    {
+                        var pointerUp = new InjectedInputTouchInfo[2];
+                        pointerUp[0] = new InjectedInputTouchInfo
+                        {
+                            PointerInfo = new InjectedInputPointerInfo
+                            {
+                                PointerId = 1,
+                                PixelLocation = new InjectedInputPoint(lastX1, lastY1),
+                                PointerOptions = InjectedInputPointerOptions.PointerUp
+                            }
+                        };
+                        // Korrigierte Koordinaten: lastX2, lastY2
+                        pointerUp[1] = new InjectedInputTouchInfo
+                        {
+                            PointerInfo = new InjectedInputPointerInfo
+                            {
+                                PointerId = 2,
+                                PixelLocation = new InjectedInputPoint(lastX2, lastY2),
+                                PointerOptions = InjectedInputPointerOptions.PointerUp
+                            }
+                        };
+                        injector.InjectTouchInput(pointerUp);
+                        isPinching = false;
+                    }
+                    return;
+                }
 
-            lastX1 = x1; lastY1 = y1; lastX2 = x2; lastY2 = y2;
+                var pointers = new InjectedInputTouchInfo[2];
+                if (!isPinching)
+                {
+                    isPinching = true;
+                    pointers[0] = new InjectedInputTouchInfo
+                    {
+                        PointerInfo = new InjectedInputPointerInfo
+                        {
+                            PointerId = 1,
+                            PixelLocation = new InjectedInputPoint(x1, y1),
+                            PointerOptions = InjectedInputPointerOptions.PointerDown | InjectedInputPointerOptions.InContact
+                        }
+                    };
+                    pointers[1] = new InjectedInputTouchInfo
+                    {
+                        PointerInfo = new InjectedInputPointerInfo
+                        {
+                            PointerId = 2,
+                            PixelLocation = new InjectedInputPoint(x2, y2),
+                            PointerOptions = InjectedInputPointerOptions.PointerDown | InjectedInputPointerOptions.InContact
+                        }
+                    };
+                }
+                else
+                {
+                    pointers[0] = new InjectedInputTouchInfo
+                    {
+                        PointerInfo = new InjectedInputPointerInfo
+                        {
+                            PointerId = 1,
+                            PixelLocation = new InjectedInputPoint(x1, y1),
+                            PointerOptions = InjectedInputPointerOptions.Update | InjectedInputPointerOptions.InContact
+                        }
+                    };
+                    pointers[1] = new InjectedInputTouchInfo
+                    {
+                        PointerInfo = new InjectedInputPointerInfo
+                        {
+                            PointerId = 2,
+                            PixelLocation = new InjectedInputPoint(x2, y2),
+                            PointerOptions = InjectedInputPointerOptions.Update | InjectedInputPointerOptions.InContact
+                        }
+                    };
+                }
+
+                injector.InjectTouchInput(pointers);
+
+                lastX1 = x1; lastY1 = y1; lastX2 = x2; lastY2 = y2;
+            }
         }
     }
 }

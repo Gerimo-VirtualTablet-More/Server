@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
     <RootNamespace>cnnc</RootNamespace>
@@ -12,16 +12,6 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="Assets\SplashScreen.scale-200.png" />
-    <Content Include="Assets\LockScreenLogo.scale-200.png" />
-    <Content Include="Assets\Square150x150Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.scale-200.png" />
-    <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
-    <Content Include="Assets\StoreLogo.png" />
-    <Content Include="Assets\Wide310x150Logo.scale-200.png" />
-  </ItemGroup>
 
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
@@ -40,6 +30,7 @@
     <PackageReference Include="Makaretu.Dns.Multicast.New" Version="0.38.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.6584" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250916003" />
+    <PackageReference Include="TrayIcon" Version="1.1.1.1" />
     <PackageReference Include="WindowsInput" Version="6.4.1" />
     <PackageReference Include="Zeroconf" Version="3.7.16" />
   </ItemGroup>
@@ -68,5 +59,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Remove="C:\Users\matte\.nuget\packages\microsoft.windowsappsdk.foundation\1.8.250906002\buildTransitive\..\include\DeploymentManagerAutoInitializer.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Remove="Assets\Square150x150Logo.png" />
+    <Content Remove="Assets\Square44x44Logo.ico" />
+    <Content Remove="Assets\Square44x44Logo.png" />
+    <Content Remove="Assets\StoreLogo.png" />
   </ItemGroup>
 </Project>

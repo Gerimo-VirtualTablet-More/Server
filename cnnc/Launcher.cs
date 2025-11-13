@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Threading.Channels;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 using Windows.UI.Input.Preview.Injection;
 using WindowsInput;
 using WindowsInput.Events;
@@ -19,37 +19,41 @@ namespace cnnc
     {
         static InputInjector _injector;
 
-        public const int DRAWING_PORT = 5000;
+        public  int port = HelperClass.DEFAULT_PORT;
         public const string SERVICE_TYPE = "_gerimo._tcp.";
+
+        // WICHTIG: Diese Felder außerhalb der Methode definieren
+       public MulticastService mdns;
+        ServiceDiscovery sd;
+        ServiceProfile serviceProfile;
+
+        UdpClient getInputData;
+        IPEndPoint clientEndpoint;
 
         public async Task main()
         {
             await run();
         }
 
-
-
-
-        public static async Task run()
+        public async Task run()
         {
             try
             {
                 Debug.WriteLine("Server wird gestartet...");
 
-                // 1. MulticastService und ServiceDiscovery erstellen
-                var mdns = new MulticastService();
-                var sd = new ServiceDiscovery(mdns);
+                // Initialisieren als FELDVARIABLEN (keine lokalen Variablen verwenden!)
+                mdns = new MulticastService();
+                sd = new ServiceDiscovery(mdns);
 
-                // Logging hinzufügen, um zu sehen, ob Netzwerkinterfaces erkannt werden
+                // Logging für erkannte Netzwerkinterfaces
                 mdns.NetworkInterfaceDiscovered += (s, e) =>
                 {
                     Console.WriteLine($"[Info] Netzwerk-Interfaces werden durchsucht...");
                     foreach (var nic in e.NetworkInterfaces)
                     {
-                        // Nur aktive WLAN- und Ethernet-Interfaces anzeigen, um die Logs zu vereinfachen
                         if (nic.OperationalStatus == System.Net.NetworkInformation.OperationalStatus.Up &&
-                           (nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Wireless80211 ||
-                            nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Ethernet))
+                            (nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Wireless80211 ||
+                             nic.NetworkInterfaceType == System.Net.NetworkInformation.NetworkInterfaceType.Ethernet))
                         {
                             Console.WriteLine($"[Info] Aktives Interface gefunden: '{nic.Name}' ({nic.Description})");
                         }
@@ -57,7 +61,6 @@ namespace cnnc
                 };
 
                 Console.WriteLine("Starte mDNS-Dienst (für Diensterkennung)...");
-                // mdns.Start() wird automatisch die IP-Adressen des Hosts im Netzwerk bekanntgeben
                 mdns.Start();
                 Console.WriteLine("mDNS-Dienst erfolgreich gestartet.");
 
@@ -69,21 +72,24 @@ namespace cnnc
                 }
                 else
                 {
-
                     Console.WriteLine("[Info] InputInjector erfolgreich erstellt.");
                 }
 
-                // 2. Dienstprofil erstellen (die einfachste und korrekte Methode)
-                // Die Bibliothek findet die IP-Adressen automatisch heraus.
-                var serviceProfile = new ServiceProfile(
+                // Dienstprofil anlegen (ebenfalls Feld!)
+                serviceProfile = new ServiceProfile(
                     instanceName: Environment.MachineName,
                     serviceName: SERVICE_TYPE,
-                    port: (ushort)DRAWING_PORT
+                    port: (ushort)port
                 );
 
-                // 3. Dienst im Netzwerk bekannt machen
                 Console.WriteLine($"Mache Dienst '{serviceProfile.FullyQualifiedName}' im Netzwerk bekannt...");
                 sd.Advertise(serviceProfile);
+
+                // Clean-up Handler für App-Exit
+                AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+                {
+                    stopService();
+                };
 
                 Console.WriteLine("\n=======================================================");
                 Console.WriteLine(" Server ist jetzt aktiv und sollte sichtbar sein.");
@@ -91,9 +97,9 @@ namespace cnnc
                 Console.WriteLine(" WENN DER DIENST NICHT ERSCHEINT -> PROBLEM = FIREWALL.");
                 Console.WriteLine("=======================================================\n");
 
-                // 4. Zeichen-Dienst starten und App am Leben halten
+                // Zeichen-Dienst starten und Server lebendig halten
                 StartDrawingService();
-                await Task.Delay(-1);
+                await Task.Delay(-1); // Blockiert asynchron => Server bleibt aktiv
             }
             catch (Exception ex)
             {
@@ -108,17 +114,38 @@ namespace cnnc
                 Console.WriteLine("\nDrücken Sie eine beliebige Taste zum Beenden.");
                 Console.ReadKey();
             }
+            finally
+            {
+                // Fallback-Cleanup (sollte eigentlich durch ProcessExit abgedeckt sein)
+                if (sd != null && serviceProfile != null)
+                    sd.Unadvertise(serviceProfile);
+                if (mdns != null)
+                    mdns.Stop();
+            }
         }
-        static void StartDrawingService()
+
+        public void stopService()
+        {
+            if (sd != null && serviceProfile != null)
+            {
+                Console.WriteLine("Dienst wird abgemeldet (Exit) ...");
+                sd.Unadvertise(serviceProfile);
+            }
+            if (mdns != null)
+            {
+                mdns.Stop();
+            }
+        }
+
+        void StartDrawingService()
         {
             Thread connectDraw = new Thread(() =>
             {
-                // Channels für unterschiedliche Aktionstypen
                 var hotkeyChannel = Channel.CreateUnbounded<string[]>();
                 var clickChannel = Channel.CreateUnbounded<string[]>();
                 var pinchChannel = Channel.CreateUnbounded<string[]>();
 
-                // Worker für HOTKEY: verarbeitet nur Hotkey-Nachrichten sequenziell
+                #region Worker Tasks
                 Task.Run(async () =>
                 {
                     await foreach (var msg in hotkeyChannel.Reader.ReadAllAsync())
@@ -131,8 +158,6 @@ namespace cnnc
                             {
                                 keyCodes[i] = (KeyCode)int.Parse(msg[i + 1]);
                             }
-
-                            // WindowsInput-Aufruf in eigenem Worker
                             WindowsInput.Simulate.Events().ClickChord(keyCodes).Invoke();
                         }
                         catch (Exception ex)
@@ -141,19 +166,14 @@ namespace cnnc
                         }
                     }
                 });
-
-                // Worker für CLICK/HOVER/pen taps
                 Task.Run(async () =>
                 {
-                    // eigene Writing-Instanz, um Injector-Instanz nicht zwischen Threads zu teilen
                     Writing writingWorker = new Writing();
-
                     await foreach (var msg in clickChannel.Reader.ReadAllAsync())
                     {
                         try
                         {
                             string action = msg[0];
-
                             if (action.Equals("CLICK"))
                             {
                                 int xPos = int.Parse(msg[1]);
@@ -177,30 +197,23 @@ namespace cnnc
                         }
                     }
                 });
-
-                // Worker für PINCH
                 Task.Run(async () =>
                 {
-                    // Writing-Instanz nur für pinch helper (simulatePinch benötigt keinen internen injector)
                     Writing writingPinch = new Writing();
-
                     await foreach (var msg in pinchChannel.Reader.ReadAllAsync())
                     {
                         try
                         {
                             if (_injector == null)
                             {
-                                Console.WriteLine("PINCH empfangen, aber kein InputInjector verfügbar. Vorgang übersprungen.");
+                                Console.WriteLine("PINCH empfangen, aber kein InputInjector verfügbar.");
                                 continue;
                             }
-
                             int x1 = int.Parse(msg[1]);
                             int x2 = int.Parse(msg[2]);
                             int y1 = int.Parse(msg[3]);
                             int y2 = int.Parse(msg[4]);
-
                             writingPinch.simulatePinch(_injector, x1, x2, y1, y2);
-                            Console.WriteLine($"{x1} {x2} {y1} {y2}");
                         }
                         catch (Exception ex)
                         {
@@ -208,55 +221,57 @@ namespace cnnc
                         }
                     }
                 });
+                #endregion
 
-                Writing writing = new Writing();
-                UdpClient getInputData = new UdpClient(DRAWING_PORT);
-                IPEndPoint clientEndpoint = new IPEndPoint(IPAddress.Any, 0);
+                if(getInputData == null)
+                {
+                    getInputData = new UdpClient(port);
+                }
+                if (clientEndpoint == null)
+                {
+                    clientEndpoint = new IPEndPoint(IPAddress.Any, 0);
+                }
 
-                Console.WriteLine($"Zeichen-Dienst auf Port {DRAWING_PORT} gestartet. Warte auf Daten...");
+                 
+            
+
+                Console.WriteLine($"Zeichen-Dienst auf Port {port} gestartet. Warte auf Daten...");
 
                 while (true)
                 {
                     try
                     {
                         byte[] msg_byte = getInputData.Receive(ref clientEndpoint);
-                        string[] msg = Encoding.UTF8.GetString(msg_byte).Split(';');
+                        string received_text = Encoding.UTF8.GetString(msg_byte);
 
+                        if (received_text.Equals("RESOLUTION"))
+                        {
+                            Console.WriteLine($"[Anfrage] Auflösung von Client {clientEndpoint.Address} angefordert.");
+                            byte[] responseBytes = HelperClass.GetWorkAreasUtf8();
+                            getInputData.Send(responseBytes, responseBytes.Length, clientEndpoint);
+                            continue;
+                        }
+
+                        string[] msg = received_text.Split(';');
                         if (msg.Length == 0)
                             continue;
 
                         string getAction = msg[0];
 
-                        // Anstatt direkt auszuführen, verarbeite in dedizierten Worker-Queues
                         if (getAction.Equals("PINCH"))
                         {
-                            // dispatch to pinch worker
                             if (!pinchChannel.Writer.TryWrite(msg))
-                            {
                                 Console.WriteLine("PINCH-Nachricht konnte nicht in die Queue geschrieben werden.");
-                            }
                         }
                         else if (getAction.Equals("HOTKEY"))
                         {
                             if (!hotkeyChannel.Writer.TryWrite(msg))
-                            {
                                 Console.WriteLine("HOTKEY-Nachricht konnte nicht in die Queue geschrieben werden.");
-                            }
-                        }
-                        else if (getAction.Equals("CLICK") || getAction.Equals("HOVER"))
-                        {
-                            if (!clickChannel.Writer.TryWrite(msg))
-                            {
-                                Console.WriteLine("CLICK/HOVER-Nachricht konnte nicht in die Queue geschrieben werden.");
-                            }
                         }
                         else
                         {
-                            // Alle anderen Pen-Aktionen ebenfalls an den Click-Worker
                             if (!clickChannel.Writer.TryWrite(msg))
-                            {
                                 Console.WriteLine("Pen-Nachricht konnte nicht in die Queue geschrieben werden.");
-                            }
                         }
                     }
                     catch (Exception ex)
@@ -265,9 +280,10 @@ namespace cnnc
                     }
                 }
             });
-
             connectDraw.IsBackground = true;
             connectDraw.Start();
         }
+
+
     }
 }
