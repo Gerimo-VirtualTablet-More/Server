@@ -10,28 +10,30 @@ namespace cnnc
     public sealed partial class MainWindow : Window
     {
         private NotifyIcon trayIcon;
+        private readonly bool _hideOnFirstShow;
 
-        public MainWindow()
+        public MainWindow(bool hideOnFirstShow)
         {
+            _hideOnFirstShow = hideOnFirstShow;
+
             Content = new MainPage();
             this.Title = "Gerimo - Server";
             ConfigureWindow(400, 800);
 
-            // TrayIcon immer initialisieren
             CreateTrayIcon();
             trayIcon.Click += TrayIcon_Click;
 
-            var local = ApplicationData.Current.LocalSettings;
-            var autoMinimize = (local.Values["AutostartMinimize"] as bool?) ?? false;
-            if (autoMinimize)
+            if (_hideOnFirstShow)
             {
-                // Fenster erst nach Initialisierung ausblenden!
-                this.Activated += (s, e) =>
-                {
-                    var appWindow = this.AppWindow;
-                    appWindow.Hide();
-                };
+                this.Activated += MainWindow_ActivatedOnce;
             }
+        }
+
+        private void MainWindow_ActivatedOnce(object? sender, WindowActivatedEventArgs e)
+        {
+            var appWindow = this.AppWindow;
+            appWindow.Hide();
+            this.Activated -= MainWindow_ActivatedOnce;
         }
 
         private void ConfigureWindow(int width, int height)
@@ -57,7 +59,7 @@ namespace cnnc
             string assetsDir = System.IO.Path.Combine(exeDir, "Assets");
             string iconPath = System.IO.Path.Combine(assetsDir, "trayicon.ico");
             trayIcon = new NotifyIcon();
-            trayIcon.Icon = new Icon(iconPath); // Das Icon muss eine echte .ico Datei sein!
+            trayIcon.Icon = new Icon(iconPath);
             trayIcon.Text = "Gerimo is running!";
             trayIcon.Visible = true;
         }

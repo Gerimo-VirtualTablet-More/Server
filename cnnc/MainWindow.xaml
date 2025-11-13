@@ -7,7 +7,7 @@
     <Page.Resources>
         <SolidColorBrush x:Key="FgWhite" Color="White"/>
         <SolidColorBrush x:Key="CardBlack" Color="#161616"/>
-        <SolidColorBrush x:Key="BorderWhite" Color="White"/>
+        <SolidColorBrush x:Key="BorderWhite" Color="Gray"/>
         <CornerRadius x:Key="CardRadius">18</CornerRadius>
         <CornerRadius x:Key="InputRadius">12</CornerRadius>
         <CornerRadius x:Key="ButtonRadius">22</CornerRadius>
@@ -18,7 +18,7 @@
         <Border
             Background="{StaticResource CardBlack}"
             BorderBrush="{StaticResource BorderWhite}"
-            BorderThickness="2"
+            BorderThickness="1"
             CornerRadius="{StaticResource CardRadius}"
             Padding="28,22"
             Width="360">
@@ -67,7 +67,7 @@
         <Border
             Background="{StaticResource CardBlack}"
             BorderBrush="{StaticResource BorderWhite}"
-            BorderThickness="2"
+            BorderThickness="1"
             CornerRadius="{StaticResource CardRadius}"
             Padding="28,22"
             Width="360">
