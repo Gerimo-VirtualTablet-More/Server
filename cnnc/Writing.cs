@@ -8,12 +8,18 @@ namespace cnnc
     {
         private InputInjector injector;
 
+ 
+
         static InjectedInputTouchInfo[] pointerDown = new InjectedInputTouchInfo[2];
         static InjectedInputTouchInfo[] pointerUp = new InjectedInputTouchInfo[2];
 
         // globaler Lock, um gleichzeitige InjectTouchInput-Aufrufe zu serialisieren
         private static readonly object injectLock = new object();
 
+
+        // Merke die letzte Mausposition serverseitig
+        private int lastMouseX = 0;
+        private int lastMouseY = 0;
         public Writing()
         {
             injector = InputInjector.TryCreate();
@@ -207,19 +213,28 @@ namespace cnnc
 
         // --- NEUE METHODEN ---
 
-        public void simulateMouseMove(int x, int y)
+        public void simulateMouseMove(int deltaX, int deltaY)
         {
-         
-
-            var moveInjector = new InjectedInputMouseInfo
+            lock (injectLock)
             {
-                MouseOptions = InjectedInputMouseOptions.Move | InjectedInputMouseOptions.Absolute,
-                DeltaX = x,
-                DeltaY = y
-            };
+                // Addiere die Deltas auf die letzte Mausposition
+                int newX = lastMouseX + deltaX;
+                int newY = lastMouseY + deltaY;
 
-            injector.InjectMouseInput(new[] { moveInjector });
+                var moveInjector = new InjectedInputMouseInfo
+                {
+                    MouseOptions = InjectedInputMouseOptions.Move | InjectedInputMouseOptions.Absolute,
+                    DeltaX = newX,
+                    DeltaY = newY
+                };
+                injector.InjectMouseInput(new[] { moveInjector });
+
+                // Neue Position speichern
+                lastMouseX = newX;
+                lastMouseY = newY;
+            }
         }
+
 
 
         public void simulateMouseClick(int button)
