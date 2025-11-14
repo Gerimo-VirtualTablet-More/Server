@@ -203,5 +203,41 @@ namespace cnnc
                 lastX1 = x1; lastY1 = y1; lastX2 = x2; lastY2 = y2;
             }
         }
+
+        // --- NEUE METHODEN ---
+
+        public void simulateMouseMove(int x, int y, int screenWidth, int screenHeight)
+        {
+            // Die Koordinaten müssen für absolute Positionierung auf einen Bereich von 0-65535 normalisiert werden.
+            int normalizedX = (x * 65535) / screenWidth;
+            int normalizedY = (y * 65535) / screenHeight;
+
+            var moveInjector = new InjectedInputMouseInfo
+            {
+                MouseOptions = InjectedInputMouseOptions.Move | InjectedInputMouseOptions.Absolute,
+                DeltaX = normalizedX,
+                DeltaY = normalizedY
+            };
+            injector.InjectMouseInput(new[] { moveInjector });
+        }
+
+        public void simulateMouseClick(int button)
+        {
+            var clickInjector = new InjectedInputMouseInfo();
+            if (button == 1) // Links-Klick
+            {
+                clickInjector.MouseOptions = InjectedInputMouseOptions.LeftDown;
+                injector.InjectMouseInput(new[] { clickInjector });
+                clickInjector.MouseOptions = InjectedInputMouseOptions.LeftUp;
+                injector.InjectMouseInput(new[] { clickInjector });
+            }
+            else if (button == 2) // Rechts-Klick
+            {
+                clickInjector.MouseOptions = InjectedInputMouseOptions.RightDown;
+                injector.InjectMouseInput(new[] { clickInjector });
+                clickInjector.MouseOptions = InjectedInputMouseOptions.RightUp;
+                injector.InjectMouseInput(new[] { clickInjector });
+            }
+        }
     }
 }
