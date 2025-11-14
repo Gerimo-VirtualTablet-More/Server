@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Windows.UI.Input.Preview.Injection;
 
 namespace cnnc
@@ -206,20 +207,20 @@ namespace cnnc
 
         // --- NEUE METHODEN ---
 
-        public void simulateMouseMove(int x, int y, int screenWidth, int screenHeight)
+        public void simulateMouseMove(int x, int y)
         {
-            // Die Koordinaten müssen für absolute Positionierung auf einen Bereich von 0-65535 normalisiert werden.
-            int normalizedX = (x * 65535) / screenWidth;
-            int normalizedY = (y * 65535) / screenHeight;
+         
 
             var moveInjector = new InjectedInputMouseInfo
             {
                 MouseOptions = InjectedInputMouseOptions.Move | InjectedInputMouseOptions.Absolute,
-                DeltaX = normalizedX,
-                DeltaY = normalizedY
+                DeltaX = x,
+                DeltaY = y
             };
+
             injector.InjectMouseInput(new[] { moveInjector });
         }
+
 
         public void simulateMouseClick(int button)
         {

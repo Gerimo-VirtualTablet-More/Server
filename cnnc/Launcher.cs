@@ -19,16 +19,24 @@ namespace cnnc
     {
         static InputInjector _injector;
 
-        public  int port = HelperClass.DEFAULT_PORT;
+        public int port = HelperClass.DEFAULT_PORT;
         public const string SERVICE_TYPE = "_gerimo._tcp.";
 
-        // WICHTIG: Diese Felder außerhalb der Methode definieren
-       public MulticastService mdns;
+        // Felder für Dienste und Netzwerk
+        public MulticastService mdns;
         ServiceDiscovery sd;
         ServiceProfile serviceProfile;
-
         UdpClient getInputData;
         IPEndPoint clientEndpoint;
+
+        // Channel-Felder (neu!)
+        Channel<string[]> hotkeyChannel;
+        Channel<string[]> clickChannel;
+        Channel<string[]> pinchChannel;
+        Channel<string[]> mouseChannel;
+
+        // Für sauberen Shutdown
+        CancellationTokenSource _cts = new CancellationTokenSource();
 
         public async Task main()
         {
@@ -41,11 +49,10 @@ namespace cnnc
             {
                 Debug.WriteLine("Server wird gestartet...");
 
-                // Initialisieren als FELDVARIABLEN (keine lokalen Variablen verwenden!)
+                // Initialisieren als Feldvariablen
                 mdns = new MulticastService();
                 sd = new ServiceDiscovery(mdns);
 
-                // Logging für erkannte Netzwerkinterfaces
                 mdns.NetworkInterfaceDiscovered += (s, e) =>
                 {
                     Console.WriteLine($"[Info] Netzwerk-Interfaces werden durchsucht...");
@@ -64,18 +71,14 @@ namespace cnnc
                 mdns.Start();
                 Console.WriteLine("mDNS-Dienst erfolgreich gestartet.");
 
-                // Initialisieren des InputInjectors
+                // InputInjector initialisieren
                 _injector = InputInjector.TryCreate();
                 if (_injector == null)
-                {
                     Console.WriteLine("[Warnung] InputInjector konnte nicht erstellt werden. PINCH-Funktionalität wird nicht verfügbar sein.");
-                }
                 else
-                {
                     Console.WriteLine("[Info] InputInjector erfolgreich erstellt.");
-                }
 
-                // Dienstprofil anlegen (ebenfalls Feld!)
+                // Dienstprofil anlegen
                 serviceProfile = new ServiceProfile(
                     instanceName: Environment.MachineName,
                     serviceName: SERVICE_TYPE,
@@ -85,7 +88,6 @@ namespace cnnc
                 Console.WriteLine($"Mache Dienst '{serviceProfile.FullyQualifiedName}' im Netzwerk bekannt...");
                 sd.Advertise(serviceProfile);
 
-                // Clean-up Handler für App-Exit
                 AppDomain.CurrentDomain.ProcessExit += (s, e) =>
                 {
                     stopService();
@@ -105,9 +107,7 @@ namespace cnnc
             {
                 Console.WriteLine($"[FATALER FEHLER] Ein Fehler hat den Start des Servers verhindert: {ex.Message}");
                 if (ex.InnerException != null)
-                {
                     Console.WriteLine($"[Details] {ex.InnerException.Message}");
-                }
                 Console.WriteLine("\nDieser Fehler passiert oft, wenn:");
                 Console.WriteLine("  a) Ein anderes Programm bereits den UDP-Port 5353 verwendet (z.B. iTunes, Skype).");
                 Console.WriteLine("  b) Die Windows-Firewall den Zugriff blockiert (sehr wahrscheinlich!).");
@@ -116,11 +116,21 @@ namespace cnnc
             }
             finally
             {
-                // Fallback-Cleanup (sollte eigentlich durch ProcessExit abgedeckt sein)
+                // Fallback-Cleanup
                 if (sd != null && serviceProfile != null)
                     sd.Unadvertise(serviceProfile);
                 if (mdns != null)
                     mdns.Stop();
+                getInputData?.Close();
+                getInputData?.Dispose();
+
+                // Channels korrekt abschließen
+                hotkeyChannel?.Writer.Complete();
+                clickChannel?.Writer.Complete();
+                pinchChannel?.Writer.Complete();
+                mouseChannel?.Writer.Complete();
+
+                _cts.Cancel();
             }
         }
 
@@ -132,32 +142,41 @@ namespace cnnc
                 sd.Unadvertise(serviceProfile);
             }
             if (mdns != null)
-            {
                 mdns.Stop();
-            }
+
+            getInputData?.Close();
+            getInputData?.Dispose();
+
+            // Channels schließen
+            hotkeyChannel?.Writer.Complete();
+            clickChannel?.Writer.Complete();
+            pinchChannel?.Writer.Complete();
+            mouseChannel?.Writer.Complete();
+
+            _cts.Cancel();
         }
 
         void StartDrawingService()
         {
+            // Channels als Felder initialisieren
+            hotkeyChannel = Channel.CreateUnbounded<string[]>();
+            clickChannel = Channel.CreateUnbounded<string[]>();
+            pinchChannel = Channel.CreateUnbounded<string[]>();
+            mouseChannel = Channel.CreateUnbounded<string[]>();
+
             Thread connectDraw = new Thread(() =>
             {
-                var hotkeyChannel = Channel.CreateUnbounded<string[]>();
-                var clickChannel = Channel.CreateUnbounded<string[]>();
-                var pinchChannel = Channel.CreateUnbounded<string[]>();
-
                 #region Worker Tasks
                 Task.Run(async () =>
                 {
-                    await foreach (var msg in hotkeyChannel.Reader.ReadAllAsync())
+                    await foreach (var msg in hotkeyChannel.Reader.ReadAllAsync(_cts.Token))
                     {
                         try
                         {
                             int keyCount = Math.Max(0, msg.Length - 1);
                             KeyCode[] keyCodes = new KeyCode[keyCount];
                             for (int i = 0; i < keyCount; i++)
-                            {
                                 keyCodes[i] = (KeyCode)int.Parse(msg[i + 1]);
-                            }
                             WindowsInput.Simulate.Events().ClickChord(keyCodes).Invoke();
                         }
                         catch (Exception ex)
@@ -165,11 +184,11 @@ namespace cnnc
                             Console.WriteLine("Fehler im HOTKEY-Worker: " + ex.Message);
                         }
                     }
-                });
+                }, _cts.Token);
                 Task.Run(async () =>
                 {
                     Writing writingWorker = new Writing();
-                    await foreach (var msg in clickChannel.Reader.ReadAllAsync())
+                    await foreach (var msg in clickChannel.Reader.ReadAllAsync(_cts.Token))
                     {
                         try
                         {
@@ -196,11 +215,11 @@ namespace cnnc
                             Console.WriteLine("Fehler im CLICK-Worker: " + ex.Message);
                         }
                     }
-                });
+                }, _cts.Token);
                 Task.Run(async () =>
                 {
                     Writing writingPinch = new Writing();
-                    await foreach (var msg in pinchChannel.Reader.ReadAllAsync())
+                    await foreach (var msg in pinchChannel.Reader.ReadAllAsync(_cts.Token))
                     {
                         try
                         {
@@ -220,24 +239,51 @@ namespace cnnc
                             Console.WriteLine("Fehler im PINCH-Worker: " + ex.Message);
                         }
                     }
-                });
+                }, _cts.Token);
+                Task.Run(async () =>
+                {
+                    Writing mouse = new Writing();
+                    await foreach (var msg in mouseChannel.Reader.ReadAllAsync(_cts.Token))
+                    {
+                        try
+                        {
+                            if (_injector == null)
+                            {
+                                Console.WriteLine("Mouse empfangen, aber kein InputInjector verfügbar.");
+                                continue;
+                            }
+                            string action = msg[0];
+                            if (action.Equals("MOUSE"))
+                            {
+                                int x = int.Parse(msg[1]);
+                                int y = int.Parse(msg[2]);
+                                mouse.simulateMouseMove(x, y);
+                            }
+                            else if (action.Equals("LEFT_MOUSE_CLICK"))
+                            {
+                                mouse.simulateMouseClick(1);
+                            }
+                            else if (action.Equals("RIGHT_MOUSE_CLICK"))
+                            {
+                                mouse.simulateMouseClick(2);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Fehler im mouse-Worker: " + ex.Message);
+                        }
+                    }
+                }, _cts.Token);
                 #endregion
 
-                if(getInputData == null)
-                {
+                if (getInputData == null)
                     getInputData = new UdpClient(port);
-                }
                 if (clientEndpoint == null)
-                {
                     clientEndpoint = new IPEndPoint(IPAddress.Any, 0);
-                }
-
-                 
-            
 
                 Console.WriteLine($"Zeichen-Dienst auf Port {port} gestartet. Warte auf Daten...");
 
-                while (true)
+                while (!_cts.Token.IsCancellationRequested)
                 {
                     try
                     {
@@ -268,6 +314,11 @@ namespace cnnc
                             if (!hotkeyChannel.Writer.TryWrite(msg))
                                 Console.WriteLine("HOTKEY-Nachricht konnte nicht in die Queue geschrieben werden.");
                         }
+                        else if (getAction.Equals("MOUSE") || getAction.Equals("LEFT_MOUSE_CLICK") || getAction.Equals("RIGHT_MOUSE_CLICK"))
+                        {
+                            if (!mouseChannel.Writer.TryWrite(msg))
+                                Console.WriteLine("MOUSE-Nachricht konnte nicht in die Queue geschrieben werden.");
+                        }
                         else
                         {
                             if (!clickChannel.Writer.TryWrite(msg))
@@ -283,7 +334,5 @@ namespace cnnc
             connectDraw.IsBackground = true;
             connectDraw.Start();
         }
-
-
     }
 }
