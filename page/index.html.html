@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gerimo - Tablet Design</title>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f5f5f5;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .tablet-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 1000px;
+            height: 750px;
+            transform-origin: center center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            cursor: pointer;
+        }
+        
+        .tablet-container.initial {
+            transform: translate(-50%, -50%) rotate(-25deg) scale(0.7);
+        }
+        
+        .tablet-container.active {
+            transform: translate(-50%, -50%) rotate(0deg) scale(1);
+            width: 100vw;
+            height: 100vh;
+            cursor: default;
+        }
+        
+        .tablet-edge-bottom {
+            position: absolute;
+            width: 100%;
+            height: 97.8%;
+            background: #B7B7B7;
+            border-radius: 50px;
+            top: 6%;
+            left: 0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tablet-container.active .tablet-edge-bottom {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .tablet-edge-middle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #E2E2E2;
+            border-radius: 50px;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tablet-container.active .tablet-edge-middle {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .tablet-screen {
+            position: absolute;
+            width: 100%;
+            height: 90%;
+            background: #303030;
+            border-radius: 40px;
+            border: 16px solid #000;
+            top: 0;
+            left: 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tablet-container.active .tablet-screen {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: 0;
+            top: 0;
+            left: 0;
+        }
+        
+        .home-button {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 140px;
+            height: 25px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.5);
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+        
+        .tablet-container.active .home-button {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .tablet-bottom {
+            position: absolute;
+            bottom: -21px;
+            left: 0;
+            right: 0;
+            height: 51px;
+            background: linear-gradient(to bottom, #c8c8c8, #e8e8e8);
+            border-radius: 0 0 50px 50px;
+            z-index: -1;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tablet-container.active .tablet-bottom {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Website Content */
+        .website-content {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #000000;
+            color: #FFFFFF;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease 1s, visibility 0s 1s;
+            padding: 20px;
+        }
+        
+        .tablet-container.active .website-content {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Hero Section */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 24px 60px;
+        }
+
+        .hero-content {
+            max-width: 840px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            margin-bottom: 24px;
+            color: #FFFFFF;
+        }
+
+        .headline-large {
+            font-size: clamp(1.125rem, 2.5vw, 1.75rem);
+            font-weight: 400;
+            color: #CCCCCC;
+            margin-bottom: 48px;
+            line-height: 1.5;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 80px;
+        }
+
+        .btn {
+            padding: 10px 32px;
+            height: 40px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .btn-filled {
+            background: #000000;
+            color: #FFFFFF;
+            border-radius: 20px 0 0 20px;
+        }
+
+        .btn-outlined {
+            background: #FFFFFF;
+            color: #000000;
+            border-radius: 0 20px 20px 0;
+        }
+
+        .container {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .section {
+            padding: 40px 0;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .title-large {
+            font-size: clamp(1.375rem, 3vw, 2rem);
+            font-weight: 400;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+        }
+
+        .body-large {
+            font-size: 1rem;
+            color: #CCCCCC;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: #000000;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            position: relative;
+            border: 1px solid #FFFFFF;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px 3px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .label-large {
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            color: #000000;
+            text-transform: uppercase;
+            background: #FFFFFF;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+
+        .title-medium {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.15px;
+            color: #FFFFFF;
+            margin-bottom: 8px;
+        }
+
+        .body-medium {
+            font-size: 0.875rem;
+            font-weight: 400;
+            letter-spacing: 0.25px;
+            line-height: 1.43;
+            color: #FFFFFF;
+            margin-bottom: 16px;
+        }
+
+        .card-list {
+            list-style: none;
+            margin: 24px 0;
+        }
+
+        .card-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid #FFFFFF;
+            font-size: 0.875rem;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-list li:last-child {
+            border-bottom: none;
+        }
+
+        .card-list li::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .card-button {
+            width: 100%;
+            margin-top: 16px;
+            padding: 10px 32px;
+            height: 40px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.1px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+        }
+
+        .card-button.primary {
+            background: #000000;
+            color: #FFFFFF;
+            border-radius: 20px 0 0 20px;
+        }
+
+        .card-button.secondary {
+            background: #FFFFFF;
+            color: #000000;
+            border-radius: 0 20px 20px 0;
+        }
+
+        .features-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-item {
+            background: #000000;
+            border: 1px solid #FFFFFF;
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 4px;
+            height: 0;
+            background: #FFFFFF;
+            transition: height 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .feature-item:hover {
+            box-shadow: 0 2px 4px 1px rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-item:hover::before {
+            height: 100%;
+        }
+
+        .feature-number {
+            font-size: 2.5rem;
+            font-weight: 300;
+            color: #FFFFFF;
+            line-height: 1;
+            margin-bottom: 16px;
+        }
+
+        .feature-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #FFFFFF;
+            margin-bottom: 8px;
+        }
+
+        .feature-description {
+            font-size: 0.875rem;
+            color: #FFFFFF;
+            line-height: 1.43;
+        }
+
+        footer {
+            text-align: center;
+            padding: 48px 24px;
+            border-top: 1px solid #333333;
+        }
+
+        .footer-content {
+            font-size: 0.875rem;
+            color: #666666;
+        }
+
+        /* Responsive scaling */
+        @media (max-width: 1200px) {
+            .tablet-container.initial {
+                transform: translate(-50%, -50%) rotate(-25deg) scale(0.6);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .tablet-container.initial {
+                transform: translate(-50%, -50%) rotate(-20deg) scale(0.5);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .tablet-container.initial {
+                transform: translate(-50%, -50%) rotate(-15deg) scale(0.45);
+            }
+            
+            .hero {
+                padding: 60px 16px 80px;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .features-list {
+                grid-template-columns: 1fr;
+            }
+
+            .cta-group {
+                flex-direction: column;
+                width: 100%;
+                max-width: 280px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .tablet-container.initial {
+                transform: translate(-50%, -50%) rotate(-10deg) scale(0.4);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .tablet-container.initial {
+                transform: translate(-50%, -50%) rotate(-8deg) scale(0.35);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="tablet-container initial" id="tablet">
+        <div class="tablet-edge-bottom"></div>
+        <div class="tablet-edge-middle"></div>
+        <div class="tablet-screen">
+            <div class="home-button"></div>
+            <div class="website-content">
+                <section class="hero">
+                    <div class="hero-content">
+                        <h1>Gerimo</h1>
+                        <p class="headline-large">
+                            Verwandle dein Android-Gerät in ein professionelles Eingabegerät für Windows. 
+                            Nutze Stift-Druck, Neigung und Touch-Gesten mit Echtzeit-Übertragung via UDP.
+                        </p>
+                        <div class="cta-group">
+                            <a href="#download" class="btn btn-filled">Jetzt herunterladen</a>
+                            <a href="#features" class="btn btn-outlined">Features ansehen</a>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="container">
+                    <section id="download" class="section">
+                        <div class="section-header">
+                            <h2 class="title-large">Downloads</h2>
+                            <p class="body-large">Server und Client für dein individuelles Setup</p>
+                        </div>
+
+                        <div class="cards-grid">
+                            <div class="card">
+                                <span class="label-large">Windows</span>
+                                <div>
+                                    <h3 class="title-medium">Windows Server</h3>
+                                </div>
+                                <p class="body-medium">
+                                    Der Windows-Server empfängt Eingaben von deinem Android-Gerät und simuliert sie über die Windows API. 
+                                    Automatische Erkennung im Netzwerk oder manuelle Konfiguration möglich.
+                                </p>
+                                <ul class="card-list">
+                                    <li>Windows 10/11 erforderlich</li>
+                                    <li>Automatische Serversuche (NSD)</li>
+                                    <li>Manuelle Port-Konfiguration</li>
+                                    <li>Multi-Monitor Workarea Support</li>
+                                </ul>
+                                <button class="card-button primary">Windows Server herunterladen</button>
+                            </div>
+
+                            <div class="card">
+                                <span class="label-large">Android</span>
+                                <div>
+                                    <h3 class="title-medium">Android Client</h3>
+                                </div>
+                                <p class="body-medium">
+                                    Die Android-App überträgt Stift-Daten (Position, Druck, Neigung) in Echtzeit via UDP. 
+                                    Erstelle Profile für verschiedene Workflows und speichere alles lokal.
+                                </p>
+                                <ul class="card-list">
+                                    <li>Android 8.0+ (API 26+)</li>
+                                    <li>Stylus-Support (alle Typen)</li>
+                                    <li>Profile & Shortcuts lokal gespeichert</li>
+                                    <li>JSON Import/Export</li>
+                                </ul>
+                                <button class="card-button secondary">Android Client herunterladen</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="features" class="section">
+                        <div class="section-header">
+                            <h2 class="title-large">Features</h2>
+                            <p class="body-large">Flexibel, individuell und präzise – für jeden Workflow</p>
+                        </div>
+
+                        <div class="features-list">
+                            <div class="feature-item">
+                                <div class="feature-number">01</div>
+                                <h3 class="feature-title">Profile & Shortcut-Profile</h3>
+                                <p class="feature-description">
+                                    Erstelle individuelle Profile für jeden Workflow: Streaming, Zeichnen, Modellierung. Jedes Profil kann mehrere Shortcut-Profile enthalten – zum Beispiel ein Streaming-Profil mit separaten Shortcuts für OBS oder verschiedene Spiele.
+                                </p>
+                            </div>
+
+                            <div class="feature-item">
+                                <div class="feature-number">02</div>
+                                <h3 class="feature-title">KI-gestützte Shortcut-Generierung</h3>
+                                <p class="feature-description">
+                                    Erstelle Shortcuts manuell oder lass sie von der KI generieren. Benötigt wird ein OpenRouter API-Key. Ein kostenloses Modell wird automatisch gewählt. Mit Guthaben kannst du ohne Rate-Limits arbeiten.
+                                </p>
+                            </div>
+
+                            <div class="feature-item">
+                                <div class="feature-number">03</div>
+                                <h3 class="feature-title">Universeller Stylus-Support</h3>
+                                <p class="feature-description">
+                                    Unterstützt alle Stylus-Typen. Übertragung von Position, Druck und Neigung in Echtzeit via UDP an den Windows-Server, wo die Eingaben über die Windows API simuliert werden.
+                                </p>
+                            </div>
+
+                            <div class="feature-item">
+                                <div class="feature-number">04</div>
+                                <h3 class="feature-title">Gesten & Integriertes Touchpad</h3>
+                                <p class="feature-description">
+                                    Aktiviere Zoom-Gesten mit zwei Fingern oder nutze das integrierte Touchpad für präzise Steuerung. Optimiert die Kontrolle je nach Anwendungsfall.
+                                </p>
+                            </div>
+
+                            <div class="feature-item">
+                                <div class="feature-number">05</div>
+                                <h3 class="feature-title">Flexibles Toolbar-Layout</h3>
+                                <p class="feature-description">
+                                    Die Toolbar kann links oder rechts positioniert werden – ideal für Links- und Rechtshänder. Freie Wahl des Arbeitsbereichs ermöglicht intuitive Anpassung an dein Setup.
+                                </p>
+                            </div>
+
+                            <div class="feature-item">
+                                <div class="feature-number">06</div>
+                                <h3 class="feature-title">Lokale Datensicherheit</h3>
+                                <p class="feature-description">
+                                    Alle Profile und Shortcuts werden lokal gespeichert. Import und Export als JSON-Dateien für einfaches Backup und Sharing zwischen Geräten. Automatische oder manuelle Serververbindung.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <footer>
+                    <div class="footer-content">
+                        <p>Gerimo © 2025</p>
+                    </div>
+                </footer>
+            </div>
+        </div>
+        <div class="tablet-bottom"></div>
+    </div>
+    
+    <script>
+        const tablet = document.getElementById('tablet');
+        let isExpanded = false;
+        
+        tablet.addEventListener('click', function(e) {
+            if (!isExpanded && !e.target.closest('.website-content')) {
+                isExpanded = true;
+                tablet.classList.remove('initial');
+                tablet.classList.add('active');
+            }
+        });
+        
+        tablet.addEventListener('touchstart', function(e) {
+            if (!isExpanded) {
+                e.preventDefault();
+                isExpanded = true;
+                tablet.classList.remove('initial');
+                tablet.classList.add('active');
+            }
+        }, { passive: false });
+        
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
