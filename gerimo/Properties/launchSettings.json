@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "cnnc (Package)": {
+    "gerimo (Package)": {
       "commandName": "MsixPackage"
     },
-    "cnnc (Unpackaged)": {
+    "gerimo (Unpackaged)": {
       "commandName": "Project"
     }
   }

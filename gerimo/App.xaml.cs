@@ -3,7 +3,7 @@ using Microsoft.Windows.AppLifecycle;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel;
 
-namespace cnnc
+namespace gerimo
 {
     public partial class App : Application
     {

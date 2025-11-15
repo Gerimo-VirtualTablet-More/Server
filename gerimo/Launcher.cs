@@ -13,7 +13,7 @@ using Windows.UI.Input.Preview.Injection;
 using WindowsInput;
 using WindowsInput.Events;
 
-namespace cnnc
+namespace gerimo
 {
     public class Launcher
     {

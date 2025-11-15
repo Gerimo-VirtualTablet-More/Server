@@ -5,7 +5,7 @@ using System.Drawing;
 using System.Windows.Forms; // NuGet: Microsoft.Windows.Compatibility
 using Windows.Storage;
 
-namespace cnnc
+namespace gerimo
 {
     public sealed partial class MainWindow : Window
     {

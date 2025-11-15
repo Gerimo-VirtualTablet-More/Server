@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Windows.UI.Input.Preview.Injection;
 
-namespace cnnc
+namespace gerimo
 {
     public class Writing
     {

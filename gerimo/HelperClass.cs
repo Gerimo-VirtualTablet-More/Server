@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace cnnc
+namespace gerimo
 {
    public class HelperClass
     {

@@ -11,7 +11,7 @@ using System.Windows;
 using Windows.ApplicationModel;
 using Windows.Storage;
 
-namespace cnnc
+namespace gerimo
 {
     public sealed partial class MainPage : Page
     {
