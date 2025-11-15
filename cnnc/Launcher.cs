@@ -316,6 +316,7 @@ namespace cnnc
                         }
                         else if (getAction.Equals("MOUSE") || getAction.Equals("LEFT_MOUSE_CLICK") || getAction.Equals("RIGHT_MOUSE_CLICK"))
                         {
+                            Console.WriteLine(msg);
                             if (!mouseChannel.Writer.TryWrite(msg))
                                 Console.WriteLine("MOUSE-Nachricht konnte nicht in die Queue geschrieben werden.");
                         }

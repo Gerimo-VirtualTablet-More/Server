@@ -221,6 +221,8 @@ namespace cnnc
                 int newX = lastMouseX + deltaX;
                 int newY = lastMouseY + deltaY;
 
+                Console.WriteLine(newX);
+
                 var moveInjector = new InjectedInputMouseInfo
                 {
                     MouseOptions = InjectedInputMouseOptions.Move | InjectedInputMouseOptions.Absolute,
