@@ -10,14 +10,14 @@
 
 	<Identity
 	  Name="973d4fa9-3c58-473f-9429-092848064c67"
-	  Publisher="CN=matte"
+	  Publisher="CN=AntozStudios"
 	  Version="1.0.0.0" />
 
 	<mp:PhoneIdentity PhoneProductId="973d4fa9-3c58-473f-9429-092848064c67" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
 	<Properties>
 		<DisplayName>Gerimo - Server</DisplayName>
-		<PublisherDisplayName>matte</PublisherDisplayName>
+		<PublisherDisplayName>AntozStudios</PublisherDisplayName>
 		<Logo>Assets\StoreLogo.png</Logo>
 	</Properties>
 
